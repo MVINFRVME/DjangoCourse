@@ -7,6 +7,9 @@ class ProductAdmin(admin.ModelAdmin):
     # list_display = 'pk', 'name', 'description', 'price', 'discount'
     list_display = 'pk', 'name', 'description_short', 'price', 'discount'
     list_display_links = 'pk', 'name'
+    ordering =  '-name', 'pk'
+    search_fields = 'name', 'description'
+
 
     def description_short(self, obj: Product) -> str:
         if len(obj.description) < 48:
