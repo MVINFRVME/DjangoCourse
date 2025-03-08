@@ -20,9 +20,22 @@ def user_form(request: HttpRequest) -> HttpResponse:
 
 
 def handle_file_upload(request: HttpRequest) -> HttpResponse:
+
+    def is_size_normal(file):
+        if file.size > 1_000_000:
+            return False
+        return True
+
+    context = {
+        'size': '',
+    }
+
     if request.method == 'POST' and request.FILES.get('myfile'):
         myfile = request.FILES['myfile']
-        fs = FileSystemStorage()
-        filename = fs.save(myfile.name, myfile)
-        print('saved file', filename)
-    return render(request, 'requestdataapp/file-upload.html')
+        if is_size_normal(myfile):
+            fs = FileSystemStorage()
+            filename = fs.save(myfile.name, myfile)
+            print('saved file', filename)
+        else:
+            context['size'] = 'File is too large!'
+    return render(request, 'requestdataapp/file-upload.html', context=context)

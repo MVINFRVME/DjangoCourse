@@ -1,4 +1,6 @@
-from django.http import HttpRequest
+import datetime
+
+from django.http import HttpRequest, HttpResponseForbidden
 
 
 def set_user_agent_on_request_middleware(get_response):
@@ -33,6 +35,28 @@ class CountRequestsMiddleware:
     def process_exception(self, request: HttpRequest, exception: Exception):
         self.exceptions_count += 1
         print('got', self.exceptions_count, 'exceptions so far')
+
+
+
+def throttling_middleware(get_response):
+    users_request_time = {}
+
+    def middleware(request: HttpRequest):
+        if request.META['REMOTE_ADDR'] in users_request_time:
+            diff = datetime.datetime.today() - users_request_time[request.META['REMOTE_ADDR']]
+            if diff.seconds < 3:
+                users_request_time[request.META['REMOTE_ADDR']] = datetime.datetime.today()
+                return HttpResponseForbidden("Request limit exceeded! Please try again later.")
+        else:
+            users_request_time[request.META['REMOTE_ADDR']] = datetime.datetime.today()
+        print(users_request_time)
+        response = get_response(request)
+
+        return response
+
+    return middleware
+
+
 
 
 
