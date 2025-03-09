@@ -1,8 +1,9 @@
 from django.contrib.auth.models import Group
 from timeit import default_timer
 from django.http import HttpResponse, HttpRequest
-from django.shortcuts import render
+from django.shortcuts import render, redirect, reverse
 from .models import Product, Order
+from .forms import ProductForm
 
 
 def shop_index(request: HttpRequest):
@@ -30,6 +31,24 @@ def products_list(request: HttpRequest):
         'products': Product.objects.all(),
     }
     return render(request, 'shopapp/products-list.html', context=context)
+
+
+def create_product(request: HttpRequest) -> HttpResponse:
+    if request.method == 'POST':
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            # name = form.cleaned_data['name']
+            # price = form.cleaned_data['price']
+            # description = form.cleaned_data['description']
+            Product.objects.create(**form.cleaned_data)
+            url = reverse('shopapp:products_list')
+            return redirect(url)
+    else:
+        form = ProductForm()
+    context = {
+        'form': form,
+    }
+    return render(request, 'shopapp/create-product.html', context=context)
 
 
 def orders_list(request: HttpRequest):

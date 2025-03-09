@@ -8,10 +8,8 @@ def set_user_agent_on_request_middleware(get_response):
     print('initial call')
 
     def middleware(request: HttpRequest):
-        print('before response')
         request.user_agent = request.META['HTTP_USER_AGENT']
         response = get_response(request)
-        print('after get response')
         return response
 
     return middleware
@@ -26,10 +24,8 @@ class CountRequestsMiddleware:
 
     def __call__(self, request: HttpRequest):
         self.requests_count += 1
-        print('requests count', self.requests_count)
         response = self.get_response(request)
         self.responses_count += 1
-        print('responses count', self.responses_count)
         return response
 
     def process_exception(self, request: HttpRequest, exception: Exception):
@@ -44,12 +40,11 @@ def throttling_middleware(get_response):
     def middleware(request: HttpRequest):
         if request.META['REMOTE_ADDR'] in users_request_time:
             diff = datetime.datetime.today() - users_request_time[request.META['REMOTE_ADDR']]
-            if diff.seconds < 3:
+            if diff.seconds < 1:
                 users_request_time[request.META['REMOTE_ADDR']] = datetime.datetime.today()
                 return HttpResponseForbidden("Request limit exceeded! Please try again later.")
         else:
             users_request_time[request.META['REMOTE_ADDR']] = datetime.datetime.today()
-        print(users_request_time)
         response = get_response(request)
 
         return response
