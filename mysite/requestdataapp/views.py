@@ -1,7 +1,7 @@
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
-from .forms import UserBioForms
+from .forms import UserBioForms, UploadFileForm
 
 
 def process_get_view(request: HttpRequest) -> HttpResponse:
@@ -24,22 +24,19 @@ def user_form(request: HttpRequest) -> HttpResponse:
 
 
 def handle_file_upload(request: HttpRequest) -> HttpResponse:
-
-    def is_size_normal(file):
-        if file.size > 1_000_000:
-            return False
-        return True
-
-    context = {
-        'size': '',
-    }
-
-    if request.method == 'POST' and request.FILES.get('myfile'):
-        myfile = request.FILES['myfile']
-        if is_size_normal(myfile):
+    if request.method == 'POST':
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            # myfile = request.FILES['myfile']
+            myfile = form.cleaned_data['file']
             fs = FileSystemStorage()
             filename = fs.save(myfile.name, myfile)
             print('saved file', filename)
-        else:
-            context['size'] = 'File is too large!'
+    else:
+        form = UploadFileForm()
+
+    context = {
+        'form': form,
+    }
+
     return render(request, 'requestdataapp/file-upload.html', context=context)
