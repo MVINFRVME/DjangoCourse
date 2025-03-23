@@ -3,7 +3,7 @@ from timeit import default_timer
 from django.http import HttpResponse, HttpRequest
 from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.views import View
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, ListView, DetailView
 from .models import Product, Order
 from .forms import ProductForm, OrderForm, GroupForm
 
@@ -37,29 +37,17 @@ class GroupsListView(View):
         return redirect(request.path)
         # return self.get(request)
 
-class ProductDetailsView(View):
-    def get(self, request: HttpRequest, pk: int) -> HttpResponse:
-        product = get_object_or_404(Product,pk=pk)
-        context = {
-            'product': product
-        }
-        return render(request, 'shopapp/product-details.html', context=context)
+
+class ProductDetailsView(DetailView):
+    template_name = 'shopapp/product-details.html'
+    model = Product
+    context_object_name = 'product'
 
 
-class ProductsListView(TemplateView):
+class ProductsListView(ListView):
     template_name = 'shopapp/products-list.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['products'] = Product.objects.all()
-        return context
-
-
-# def products_list(request: HttpRequest):
-#     context = {
-#         'products': Product.objects.all(),
-#     }
-#     return render(request, 'shopapp/products-list.html', context=context)
+    model = Product
+    context_object_name = 'products'
 
 
 def create_product(request: HttpRequest) -> HttpResponse:
@@ -81,11 +69,19 @@ def create_product(request: HttpRequest) -> HttpResponse:
     return render(request, 'shopapp/create-product.html', context=context)
 
 
-def orders_list(request: HttpRequest):
-    context = {
-        'orders': Order.objects.select_related('user').prefetch_related('products').all(),
-    }
-    return render(request, 'shopapp/orders-list.html', context=context)
+class OrdersListView(ListView):
+    queryset = (
+        Order.objects
+        .select_related('user')
+        .prefetch_related('products')
+    )
+
+class OrdersDetailView(DetailView):
+    queryset = (
+        Order.objects
+        .select_related('user')
+        .prefetch_related('products')
+    )
 
 
 def create_order(request: HttpRequest) -> HttpResponse:
