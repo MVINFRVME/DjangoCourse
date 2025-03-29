@@ -1,6 +1,8 @@
+from django.contrib.auth.views import LogoutView
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
+from django.urls import reverse, reverse_lazy
 
 
 def login_view(request: HttpRequest) -> HttpResponse:
@@ -20,6 +22,16 @@ def login_view(request: HttpRequest) -> HttpResponse:
 
     return render(request, 'myauth/login.html', {'error': 'Invalid login credentials'})
 
+
+def logout_view(request: HttpRequest):
+    logout(request)
+    return redirect(reverse('myauth:login'))
+
+
+class MyLogoutView(LogoutView):
+    next_page = reverse_lazy('myauth:login')
+    http_method_names = ['get', 'post']
+    # Инфа, что это работает неккоретко имеется, чекай учебник
 
 def set_cookie_view(request: HttpRequest) -> HttpResponse:
     response = HttpResponse('Cookie set')
