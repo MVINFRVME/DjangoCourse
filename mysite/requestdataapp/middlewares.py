@@ -40,7 +40,7 @@ def throttling_middleware(get_response):
     def middleware(request: HttpRequest):
         if request.META['REMOTE_ADDR'] in users_request_time:
             diff = datetime.datetime.today() - users_request_time[request.META['REMOTE_ADDR']]
-            if diff.seconds < 1:
+            if diff.seconds < 0.1:
                 users_request_time[request.META['REMOTE_ADDR']] = datetime.datetime.today()
                 return HttpResponseForbidden("Request limit exceeded! Please try again later.")
         else:
