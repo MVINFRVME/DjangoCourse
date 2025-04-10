@@ -57,7 +57,6 @@ class ProductCreateView(UserPassesTestMixin, CreateView):
     def test_func(self):
         return self.request.user.groups.filter(name='product_creator').exists() or self.request.user.is_superuser
 
-
     model = Product
     fields = 'name', 'price', 'description', 'discount'
     success_url = reverse_lazy('shopapp:products_list')
