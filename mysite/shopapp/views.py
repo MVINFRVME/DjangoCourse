@@ -55,18 +55,34 @@ class ProductsListView(ListView):
 
 class ProductCreateView(UserPassesTestMixin, CreateView):
     def test_func(self):
-        # return self.request.user.groups.filter(name='secret-group').exists()
-        return self.request.user.is_superuser
+        return self.request.user.groups.filter(name='product_creator').exists() or self.request.user.is_superuser
+        # return self.request.user.is_superuser
 
     model = Product
     fields = 'name', 'price', 'description', 'discount'
     success_url = reverse_lazy('shopapp:products_list')
 
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
 
-class ProductUpdateView(UpdateView):
+
+class ProductUpdateView(UserPassesTestMixin ,UpdateView):
     model = Product
     fields = 'name', 'price', 'description', 'discount'
     template_name_suffix = '_update_form'
+
+    def test_func(self):
+        product = self.get_object()  # Получаем текущий продукт
+        user = self.request.user
+
+        if user.is_superuser:
+            return True
+
+        return (
+                user.has_perm('shopapp.change_product') and
+                product.created_by == user
+        )
 
     def get_success_url(self):
         return reverse(
