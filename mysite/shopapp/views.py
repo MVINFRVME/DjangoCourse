@@ -1,12 +1,11 @@
 from django.contrib.auth.models import Group
 from timeit import default_timer
-
-from django.contrib.messages.api import success
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from .models import Product, Order
 from .forms import ProductForm, OrderForm, GroupForm
 
@@ -54,16 +53,36 @@ class ProductsListView(ListView):
     queryset = Product.objects.filter(archived=False)
 
 
-class ProductCreateView(CreateView):
+class ProductCreateView(UserPassesTestMixin, CreateView):
+    def test_func(self):
+        return self.request.user.groups.filter(name='product_creator').exists() or self.request.user.is_superuser
+        # return self.request.user.is_superuser
+
     model = Product
     fields = 'name', 'price', 'description', 'discount'
     success_url = reverse_lazy('shopapp:products_list')
 
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
 
-class ProductUpdateView(UpdateView):
+
+class ProductUpdateView(UserPassesTestMixin ,UpdateView):
     model = Product
     fields = 'name', 'price', 'description', 'discount'
     template_name_suffix = '_update_form'
+
+    def test_func(self):
+        product = self.get_object()  # Получаем текущий продукт
+        user = self.request.user
+
+        if user.is_superuser:
+            return True
+
+        return (
+                user.has_perm('shopapp.change_product') and
+                product.created_by == user
+        )
 
     def get_success_url(self):
         return reverse(
@@ -82,7 +101,7 @@ class ProductDeleteView(DeleteView):
         return HttpResponseRedirect(success_url)
 
 
-class OrdersListView(ListView):
+class OrdersListView(LoginRequiredMixin, ListView):
     queryset = (
         Order.objects
         .select_related('user')
@@ -90,7 +109,8 @@ class OrdersListView(ListView):
     )
 
 
-class OrdersDetailView(DetailView):
+class OrdersDetailView(PermissionRequiredMixin, DetailView):
+    permission_required = 'shopapp.view_order' # можно списком или кортежем
     template_name = 'shopapp/order-details.html'
     model = Order
     context_object_name = 'order'
